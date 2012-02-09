@@ -3,8 +3,11 @@ $      = Spine.$
 Model  = Spine.Model
 
 Ajax =
-  getURL: (object) ->
-    object and object.url?() or object.url
+  getURL: (object, options) ->
+    if options && options.useResourceUrl
+      object and object.resourceUrl?() or object.resourceUrl
+    else
+      object and object.recordUrl?() or object.recordUrl
 
   enabled:  true
   pending:  false
@@ -58,7 +61,7 @@ class Collection extends Base
     @ajax(
       params,
       type: 'GET',
-      url:  Ajax.getURL(record)
+      url:  Ajax.getURL(record, useResourceUrl: false)
     ).success(@recordsResponse)
      .error(@errorResponse)
     
@@ -66,7 +69,7 @@ class Collection extends Base
     @ajax(
       params,
       type: 'GET',
-      url:  Ajax.getURL(@model)
+      url:  Ajax.getURL(new @model, useResourceUrl: true)
     ).success(@recordsResponse)
      .error(@errorResponse)
     
@@ -96,7 +99,7 @@ class Singleton extends Base
       @ajax(
         params,
         type: 'GET'
-        url:  Ajax.getURL(@record)
+        url:  Ajax.getURL(@record, useResourceUrl: false)
       ).success(@recordResponse(options))
        .error(@errorResponse(options))
   
@@ -106,7 +109,7 @@ class Singleton extends Base
         params,
         type: 'POST'
         data: JSON.stringify(@record)
-        url:  Ajax.getURL(@model)
+        url:  Ajax.getURL(@record, useResourceUrl: true)
       ).success(@recordResponse(options))
        .error(@errorResponse(options))
 
@@ -116,7 +119,7 @@ class Singleton extends Base
         params,
         type: 'PUT'
         data: JSON.stringify(@record)
-        url:  Ajax.getURL(@record)
+        url:  Ajax.getURL(@record, useResourceUrl: false)
       ).success(@recordResponse(options))
        .error(@errorResponse(options))
   
@@ -125,7 +128,7 @@ class Singleton extends Base
       @ajax(
         params,
         type: 'DELETE'
-        url:  Ajax.getURL(@record)
+        url:  Ajax.getURL(@record, useResourceUrl: false)
       ).success(@recordResponse(options))
        .error(@errorResponse(options))
 
@@ -161,20 +164,20 @@ Model.host = ''
 Include =
   ajax: -> new Singleton(this)
 
-  url: (args...) ->
-    url = Ajax.getURL(@constructor)
+  recordUrl: (args...) ->
+    url = @resourceUrl()
     url += '/' unless url.charAt(url.length - 1) is '/'
     url += encodeURIComponent(@id)
     args.unshift(url)
     args.join('/')
+
+  resourceUrl: (args...) ->
+    args.unshift(@constructor.className.toLowerCase() + 's')
+    args.unshift(Model.host)
+    args.join('/')
     
 Extend = 
   ajax: -> new Collection(this)
-
-  url: (args...) ->
-    args.unshift(@className.toLowerCase() + 's')
-    args.unshift(Model.host)
-    args.join('/')
       
 Model.Ajax =
   extended: ->
