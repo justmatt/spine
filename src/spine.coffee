@@ -105,12 +105,12 @@ class Model extends Module
       return @findCID(id)
     throw('Unknown record') unless record
     record.clone()
-    
+
   @findCID: (cid) ->
     record = @crecords[cid]
     throw('Unknown record') unless record
     record.clone()
-    
+
   @exists: (id) ->
     try
       return @find(id)
@@ -121,7 +121,7 @@ class Model extends Module
     if options.clear
       @records  = {}
       @crecords = {}
-      
+
     records = @fromJSON(values)
     records = [records] unless isArray(records)
 
@@ -210,7 +210,7 @@ class Model extends Module
 
   @fromForm: ->
     (new this).fromForm(arguments...)
-    
+
   # Private
 
   @recordsValues: ->
@@ -221,9 +221,9 @@ class Model extends Module
 
   @cloneArray: (array) ->
     (value.clone() for value in array)
-    
+
   @idCounter: 0
-  
+
   @uid: ->
     @idCounter++
 
@@ -261,8 +261,8 @@ class Model extends Module
     result
 
   eql: (rec) ->
-    !!(rec and rec.constructor is @constructor and 
-        (rec.id is @id or rec.cid is @cid))
+    !!(rec and rec.constructor is @constructor and
+        ((rec.id and rec.id is @id) or rec.cid is @cid))
 
   save: (options = {}) ->
     unless options.validate is false
@@ -347,11 +347,11 @@ class Model extends Module
   create: (options) ->
     @trigger('beforeCreate', options)
     @id          = @cid unless @id
-    
+
     record       = @dup(false)
     @constructor.records[@id]   = record
     @constructor.crecords[@cid] = record
-    
+
     clone        = record.clone()
     clone.trigger('create', options)
     clone.trigger('change', 'create', options)
@@ -492,7 +492,7 @@ makeArray = (args) ->
 Spine = @Spine   = {}
 module?.exports  = Spine
 
-Spine.version    = '1.0.5'
+Spine.version    = '1.0.6'
 Spine.isArray    = isArray
 Spine.isBlank    = isBlank
 Spine.$          = $
