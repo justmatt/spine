@@ -287,8 +287,8 @@ class Model extends Module
   changeID: (id) ->
     records = @constructor.records
     records[id] = records[@id]
-    records[id].id = id
     delete records[@id]
+    records[id].id = id
     @id = id
     @save()
 
