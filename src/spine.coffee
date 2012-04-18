@@ -130,6 +130,8 @@ class Model extends Module
       @records[record.id]   = record
       @crecords[record.cid] = record
 
+    @resetIdCounter()
+
     @trigger('refresh', not options.clear and @cloneArray(records))
     this
 
@@ -224,15 +226,22 @@ class Model extends Module
 
   @idCounter: 0
 
-  @uid: ->
-    @idCounter++
+  @resetIdCounter: ->
+    ids        = (model.id for model in @all()).sort((a, b) -> a > b)
+    lastID     = ids[ids.length - 1]
+    lastID     = lastID?.replace?(/^c-/, '') or lastID
+    lastID     = parseInt(lastID, 10)
+    @idCounter = (lastID + 1) or 0
+
+  @uid: (prefix = '') ->
+    prefix + @idCounter++
 
   # Instance
 
   constructor: (atts) ->
     super
     @load atts if atts
-    @cid or= 'c-' + @constructor.uid()
+    @cid or= @constructor.uid('c-')
 
   isNew: ->
     not @exists()
@@ -262,7 +271,7 @@ class Model extends Module
 
   eql: (rec) ->
     !!(rec and rec.constructor is @constructor and
-        ((rec.id and rec.id is @id) or rec.cid is @cid))
+        (rec.cid is @cid) or (rec.id and rec.id is @id))
 
   save: (options = {}) ->
     unless options.validate is false
@@ -276,9 +285,9 @@ class Model extends Module
     @trigger('save', options)
     record
 
-  updateAttribute: (name, value) ->
+  updateAttribute: (name, value, options) ->
     @[name] = value
-    @save()
+    @save(options)
 
   updateAttributes: (atts, options) ->
     @load(atts)
@@ -399,26 +408,22 @@ class Controller extends Module
     @el.addClass(@className) if @className
     @el.attr(@attributes) if @attributes
 
-    @release -> @el.remove()
-
     @events = @constructor.events unless @events
     @elements = @constructor.elements unless @elements
 
-    @delegateEvents() if @events
+    @delegateEvents(@events) if @events
     @refreshElements() if @elements
 
     super
 
-  release: (callback) =>
-    if typeof callback is 'function'
-      @bind 'release', callback
-    else
-      @trigger 'release'
+  release: =>
+    @el.remove()
+    @unbind()
 
   $: (selector) -> $(selector, @el)
 
-  delegateEvents: ->
-    for key, method of @events
+  delegateEvents: (events) ->
+    for key, method of events
       unless typeof(method) is 'function'
         method = @proxy(@[method])
 
@@ -463,7 +468,7 @@ class Controller extends Module
   replace: (element) ->
     [previous, @el] = [@el, $(element.el or element)]
     previous.replaceWith(@el)
-    @delegateEvents()
+    @delegateEvents(@events)
     @refreshElements()
     @el
 
@@ -486,7 +491,7 @@ isBlank = (value) ->
   true
 
 makeArray = (args) ->
-  Array.prototype.slice.call(args, 0)
+  Array::slice.call(args, 0)
 
 # Globals
 
